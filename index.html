@@ -7,7 +7,8 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-    <video id="video" autoplay></video>
+    <video id="video" autoplay playsinline></video>
+    <button id="switch">🔄 Поменять камеру</button>
     <button id="capture">📸 Сделать снимок</button>
     <canvas id="canvas" style="display:none;"></canvas>
 
@@ -17,13 +18,29 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const captureButton = document.getElementById('capture');
+        const switchButton = document.getElementById('switch');
 
-        // Доступ к камере
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
+        let currentFacingMode = "user"; // Начинаем с фронтальной камеры
+        let stream;
+
+        async function startCamera(facingMode) {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop()); // Останавливаем старый поток
+            }
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facingMode }
+                });
                 video.srcObject = stream;
-            })
-            .catch(err => console.error("Ошибка доступа к камере: ", err));
+            } catch (err) {
+                console.error("Ошибка доступа к камере: ", err);
+            }
+        }
+
+        switchButton.addEventListener('click', () => {
+            currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+            startCamera(currentFacingMode);
+        });
 
         captureButton.addEventListener('click', () => {
             canvas.width = video.videoWidth;
@@ -38,6 +55,7 @@
         });
 
         tg.expand(); // Разворачиваем Mini App
+        startCamera(currentFacingMode); // Запускаем камеру
     </script>
 </body>
 </html>
