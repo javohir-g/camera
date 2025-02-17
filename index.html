@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini App Камера</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <video id="video" autoplay></video>
+    <button id="capture">📸 Сделать снимок</button>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const captureButton = document.getElementById('capture');
+
+        // Доступ к камере
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => console.error("Ошибка доступа к камере: ", err));
+
+        captureButton.addEventListener('click', () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Конвертируем в base64
+            const imageData = canvas.toDataURL("image/jpeg");
+
+            // Отправляем в бота
+            tg.sendData(imageData);
+        });
+
+        tg.expand(); // Разворачиваем Mini App
+    </script>
+</body>
+</html>
