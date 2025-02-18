@@ -22,25 +22,37 @@
         const captureButton = document.getElementById('capture');
         const switchButton = document.getElementById('switch');
 
-        let currentFacingMode = "user"; // Начинаем с фронтальной камеры
+        let currentFacingMode = "user"; // Фронтальная камера
         let stream;
 
+        console.log("User-Agent:", navigator.userAgent);
+        console.log("MediaDevices support:", !!navigator.mediaDevices);
+        console.log("getUserMedia support:", !!navigator.mediaDevices?.getUserMedia);
+
         async function startCamera(facingMode) {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop()); // Останавливаем старый поток
+            if (!navigator.mediaDevices?.getUserMedia) {
+                console.error("getUserMedia не поддерживается.");
+                alert("Ваше устройство не поддерживает камеру в Mini Apps.");
+                return;
             }
+
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop()); // Остановка предыдущего потока
+            }
+
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: facingMode }
+                    video: { facingMode: { exact: facingMode } },
+                    audio: false // Отключаем микрофон
                 });
                 video.srcObject = stream;
                 video.style.display = "block";
                 switchButton.style.display = "block";
                 captureButton.style.display = "block";
-                startButton.style.display = "none"; // Скрываем кнопку запуска
+                startButton.style.display = "none";
             } catch (err) {
-                console.error("Ошибка доступа к камере: ", err);
-                alert("Ошибка: доступ к камере запрещен.");
+                console.error("Ошибка доступа к камере:", err);
+                alert("Ошибка доступа к камере: " + err.message);
             }
         }
 
@@ -56,10 +68,8 @@
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // Конвертируем в base64
             const imageData = canvas.toDataURL("image/jpeg");
 
-            // Отправляем в бота
             tg.sendData(imageData);
         });
 
