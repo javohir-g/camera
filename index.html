@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<<<<<<< HEAD
     <title>QR Code Scanner / Reader</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -16,5 +17,93 @@
         </div>
     </div>
     <script src="script.js"></script>
+=======
+    <title>Mini App Камера + QR</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #video { width: 100%; max-width: 400px; display: none; margin-top: 10px; }
+        #log { margin-top: 15px; color: blue; font-size: 14px; }
+        #qr-result { font-size: 16px; font-weight: bold; color: green; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h2>📷 Камера + QR Сканер</h2>
+    <button id="start-camera">📷 Включить камеру</button>
+    <video id="video" autoplay playsinline></video>
+    <button id="switch" style="display: none;">🔄 Поменять камеру</button>
+    <canvas id="canvas" style="display: none;"></canvas>
+    <p id="log">Лог: Ожидание...</p>
+    <p id="qr-result"></p>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startButton = document.getElementById('start-camera');
+        const switchButton = document.getElementById('switch');
+        const log = document.getElementById('log');
+        const qrResult = document.getElementById('qr-result');
+
+        let currentFacingMode = "environment"; // Основная камера
+        let stream;
+
+        function logMessage(message) {
+            console.log("[LOG]", message);
+            log.innerText = "Лог: " + message;
+        }
+
+        async function startCamera(facingMode) {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop()); // Останавливаем старый поток
+            }
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facingMode }
+                });
+                video.srcObject = stream;
+                video.style.display = "block";
+                switchButton.style.display = "block";
+                startButton.style.display = "none"; // Скрываем кнопку запуска
+                logMessage("Камера включена. Ожидание QR-кода...");
+                scanQRCode(); // Запуск сканирования QR-кода
+            } catch (err) {
+                logMessage("Ошибка камеры: " + err.message);
+                alert("Ошибка: доступ к камере запрещен.");
+            }
+        }
+
+        startButton.addEventListener('click', () => startCamera(currentFacingMode));
+
+        switchButton.addEventListener('click', () => {
+            currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+            startCamera(currentFacingMode);
+        });
+
+        function scanQRCode() {
+            const scanInterval = setInterval(() => {
+                if (!video.videoWidth || !video.videoHeight) return;
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+
+                if (qrCode) {
+                    clearInterval(scanInterval); // Останавливаем сканирование
+                    tg.sendData(qrCode.data); // Отправляем QR-код в бота
+                    qrResult.innerText = "📸 QR-код: " + qrCode.data;
+                    logMessage("QR-код успешно найден!");
+                }
+            }, 500);
+        }
+
+        tg.expand(); // Разворачиваем Mini App
+    </script>
+>>>>>>> ba55f669fc92e14d50c17dd84a7f871f85d90ce1
 </body>
 </html>
