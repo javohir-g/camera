@@ -3,73 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini App Камера + QR</title>
+    <title>QR Code Scanner / Reader</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <button id="start-camera">📷 Включить камеру</button>
-    <video id="video" autoplay playsinline style="display: none;"></video>
-    <button id="switch" style="display: none;">🔄 Поменять камеру</button>
-    <canvas id="canvas" style="display:none;"></canvas>
-
-    <script>
-        const tg = window.Telegram.WebApp;
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const startButton = document.getElementById('start-camera');
-        const switchButton = document.getElementById('switch');
-
-        let currentFacingMode = "environment"; // Начинаем с основной камеры
-        let stream;
-
-        async function startCamera(facingMode) {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop()); // Останавливаем старый поток
-            }
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: facingMode }
-                });
-                video.srcObject = stream;
-                video.style.display = "block";
-                switchButton.style.display = "block";
-                startButton.style.display = "none"; // Скрываем кнопку запуска
-                scanQRCode(); // Запускаем сканирование QR-кода
-            } catch (err) {
-                console.error("Ошибка доступа к камере: ", err);
-                alert("Ошибка: доступ к камере запрещен.");
-            }
-        }
-
-        startButton.addEventListener('click', () => startCamera(currentFacingMode));
-
-        switchButton.addEventListener('click', () => {
-            currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
-            startCamera(currentFacingMode);
-        });
-
-        function scanQRCode() {
-            const scanInterval = setInterval(() => {
-                if (!video.videoWidth || !video.videoHeight) return;
-
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
-
-                if (qrCode) {
-                    clearInterval(scanInterval); // Остановить сканирование
-                    tg.sendData(qrCode.data); // Отправляем QR-код в бота
-                    alert("QR-код найден: " + qrCode.data);
-                }
-            }, 500);
-        }
-
-        tg.expand(); // Разворачиваем Mini App
-    </script>
+    <div class="container">
+        <h1>Сканирование QR-кода</h1>
+        <div class="section">
+            <div id="my-qr-reader"></div>
+        </div>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
