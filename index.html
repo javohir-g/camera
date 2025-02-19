@@ -6,12 +6,21 @@
     <title>Mini App Камера + QR</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #video { width: 100%; max-width: 400px; display: none; margin-top: 10px; }
+        #log { margin-top: 15px; color: blue; font-size: 14px; }
+        #qr-result { font-size: 16px; font-weight: bold; color: green; margin-top: 10px; }
+    </style>
 </head>
 <body>
+    <h2>📷 Камера + QR Сканер</h2>
     <button id="start-camera">📷 Включить камеру</button>
-    <video id="video" autoplay playsinline style="display: none;"></video>
+    <video id="video" autoplay playsinline></video>
     <button id="switch" style="display: none;">🔄 Поменять камеру</button>
-    <canvas id="canvas" style="display:none;"></canvas>
+    <canvas id="canvas" style="display: none;"></canvas>
+    <p id="log">Лог: Ожидание...</p>
+    <p id="qr-result"></p>
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -20,9 +29,16 @@
         const ctx = canvas.getContext('2d');
         const startButton = document.getElementById('start-camera');
         const switchButton = document.getElementById('switch');
+        const log = document.getElementById('log');
+        const qrResult = document.getElementById('qr-result');
 
-        let currentFacingMode = "environment"; // Начинаем с основной камеры
+        let currentFacingMode = "environment"; // Основная камера
         let stream;
+
+        function logMessage(message) {
+            console.log("[LOG]", message);
+            log.innerText = "Лог: " + message;
+        }
 
         async function startCamera(facingMode) {
             if (stream) {
@@ -36,9 +52,10 @@
                 video.style.display = "block";
                 switchButton.style.display = "block";
                 startButton.style.display = "none"; // Скрываем кнопку запуска
-                scanQRCode(); // Запускаем сканирование QR-кода
+                logMessage("Камера включена. Ожидание QR-кода...");
+                scanQRCode(); // Запуск сканирования QR-кода
             } catch (err) {
-                console.error("Ошибка доступа к камере: ", err);
+                logMessage("Ошибка камеры: " + err.message);
                 alert("Ошибка: доступ к камере запрещен.");
             }
         }
@@ -53,18 +70,19 @@
         function scanQRCode() {
             const scanInterval = setInterval(() => {
                 if (!video.videoWidth || !video.videoHeight) return;
-                
+
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
+
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
 
                 if (qrCode) {
-                    clearInterval(scanInterval); // Остановить сканирование
+                    clearInterval(scanInterval); // Останавливаем сканирование
                     tg.sendData(qrCode.data); // Отправляем QR-код в бота
-                    alert("QR-код найден: " + qrCode.data);
+                    qrResult.innerText = "📸 QR-код: " + qrCode.data;
+                    logMessage("QR-код успешно найден!");
                 }
             }, 500);
         }
